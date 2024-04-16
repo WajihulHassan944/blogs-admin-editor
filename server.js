@@ -39,14 +39,14 @@ const bcrypt = require('bcrypt');
 
 
 
-const blogsSchema = new mongoose.Schema({
+const blogsSchemaNew = new mongoose.Schema({
   url: String,
   title: String,
   text: String,
   blogDate: Date
 });
 
-const Blogs = mongoose.model('Blogs', blogsSchema);
+const BlogsTejasvi = mongoose.model('BlogsTejasvi', blogsSchemaNew);
 
 app.post('/uploadBlogFmma', upload.single('image'), async (req, res) => {
   const formData = new FormData();
@@ -64,7 +64,7 @@ app.post('/uploadBlogFmma', upload.single('image'), async (req, res) => {
   const { title, text , blogDate } = req.body; // Destructure title and text from req.body
 
   // Save the image URL, title, and text to the database
-  const newBlog = new Blogs({ url: imageUrl, title: title, text: text, blogDate: blogDate });
+  const newBlog = new BlogsTejasvi({ url: imageUrl, title: title, text: text, blogDate: blogDate });
   await newBlog.save();
   res.status(200).send('Blog uploaded successfully');
 });
@@ -74,7 +74,7 @@ app.get('/blogFmma/:objectId', async (req, res) => {
   const { objectId } = req.params;
 
   try {
-    const user = await Blogs.findById(objectId);
+    const user = await BlogsTejasvi.findById(objectId);
     if (user) {
       res.status(200).json(user);
     } else {
@@ -90,7 +90,7 @@ app.delete('/blogtodeleteFmma/:id', async (req, res) => {
   const { id } = req.params;
   console.log('Received DELETE request for blog ID:', id);
   try {
-    const blog = await Blogs.findByIdAndDelete(id);
+    const blog = await BlogsTejasvi.findByIdAndDelete(id);
     
     res.status(200).json({ message: 'Data deleted successfully' });
   } catch (error) {
@@ -102,7 +102,7 @@ app.delete('/blogtodeleteFmma/:id', async (req, res) => {
 
 // Define route for fetching images
 app.get('/blogsFmma', async (req, res) => {
-  const images = await Blogs.find();
+  const images = await BlogsTejasvi.find();
   res.send(images);
 });
 
