@@ -10,12 +10,6 @@ app.use(express.json());
 app.use(cors());
 
 
-const multer = require('multer');
-
-// Configure multer for file upload
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const PORT = process.env.PORT || 3000;
