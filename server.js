@@ -164,7 +164,7 @@ const tejassviBlogAdminSchema = new mongoose.Schema({
   email: String,
   password: String,
   });
-const tejassviBlogAdmin = new mongoose.model("tejassviBlogAdmin", tejassviBlogAdminSchema);
+const TejassviBlogAdmin = new mongoose.model("TejassviBlogAdmin", tejassviBlogAdminSchema);
 
 
 
@@ -174,7 +174,7 @@ app.post('/api/login/tejassvi', async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await tejassviBlogAdmin.findOne({ email: email });
+    const user = await TejassviBlogAdmin.findOne({ email: email });
 
     if (user) {
       const passwordMatch = await bcrypt.compare(password, user.password);
@@ -199,14 +199,14 @@ app.post('/api/register/tejassvi', async (req, res) => {
 console.log(name);
 
   try {
-    const existingUser = await tejassviBlogAdmin.findOne({ email: email });
+    const existingUser = await TejassviBlogAdmin.findOne({ email: email });
 
     if (existingUser) {
       res.status(409).json({ message: 'User already exists' });
     } else {
       const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
 
-      const newUser = new tejassviBlogAdmin({
+      const newUser = new TejassviBlogAdmin({
         name: name,
         email: email,
         password: hashedPassword,
