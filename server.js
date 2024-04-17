@@ -196,7 +196,7 @@ app.post('/api/login/tejassvi', async (req, res) => {
 app.post('/api/register/tejassvi', async (req, res) => {
   
   const { name, email, password } = req.body; // Destructure title and text from req.body
-
+console.log(name);
 
   try {
     const existingUser = await tejassviBlogAdmin.findOne({ email: email });
