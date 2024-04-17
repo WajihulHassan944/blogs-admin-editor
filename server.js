@@ -158,7 +158,6 @@ app.put('/updateBlogFmma/:id', upload.single('image'), async (req, res) => {
 
 
 
-const bcrypt = require('bcrypt');
 
 const tejassviBlogAdminSchema = new mongoose.Schema({
   name: String,
