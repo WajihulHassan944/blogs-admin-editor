@@ -107,6 +107,47 @@ app.get('/blogsFmma', async (req, res) => {
 });
 
 
+// Define route for updating a blog
+app.put('/updateBlogFmma/:id', upload.single('image'), async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Check if the blog exists
+    const existingBlog = await BlogsTejasvi.findById(id);
+    if (!existingBlog) {
+      return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    // Upload image to ImgBB
+    const formData = new FormData();
+    const { default: fetch } = await import('node-fetch');
+    formData.append('image', req.file.buffer.toString('base64'));
+
+    const response = await fetch('https://api.imgbb.com/1/upload?key=368cbdb895c5bed277d50d216adbfa52', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+    const imageUrl = data.data.url;
+
+    // Update the blog fields
+    const { title, text, blogDate } = req.body;
+
+    existingBlog.url = imageUrl;
+    existingBlog.title = title || existingBlog.title;
+    existingBlog.text = text || existingBlog.text;
+    existingBlog.blogDate = blogDate || existingBlog.blogDate;
+
+    // Save the updated blog
+    await existingBlog.save();
+
+    res.status(200).json({ message: 'Blog updated successfully', updatedBlog: existingBlog });
+  } catch (error) {
+    console.error('Error updating blog:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 
 //code for blogs end
