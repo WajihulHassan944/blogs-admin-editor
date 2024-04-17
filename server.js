@@ -156,6 +156,85 @@ app.put('/updateBlogFmma/:id', upload.single('image'), async (req, res) => {
 
 
 
+
+
+const bcrypt = require('bcrypt');
+
+const tejassviBlogAdminSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  password: String,
+  });
+const tejassviBlogAdmin = new mongoose.model("tejassviBlogAdmin", tejassviBlogAdminSchema);
+
+
+
+
+//Routes
+app.post('/api/login/tejassvi', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await tejassviBlogAdmin.findOne({ email: email });
+
+    if (user) {
+      const passwordMatch = await bcrypt.compare(password, user.password);
+
+      if (passwordMatch) {
+        const objectId = user._id.toString();
+        res.status(200).json({ message: 'Login successful', objectId: objectId });
+      } else {
+        res.status(401).json({ message: 'Invalid password' });
+      }
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/api/register/tejassvi', async (req, res) => {
+  
+  const { name, email, password } = req.body; // Destructure title and text from req.body
+
+
+  try {
+    const existingUser = await tejassviBlogAdmin.findOne({ email: email });
+
+    if (existingUser) {
+      res.status(409).json({ message: 'User already exists' });
+    } else {
+      const hashedPassword = await bcrypt.hash(password, 10); // Hash the password
+
+      const newUser = new tejassviBlogAdmin({
+        name: name,
+        email: email,
+        password: hashedPassword,
+        
+      });
+
+      await newUser.save();
+      res.status(200).json({ message: 'Registration successful', userName: name , userEmail: email });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.get("/", (req,res) =>{
   res.send("Backend server for Blogs has started running successfully...");
 });
