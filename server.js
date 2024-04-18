@@ -106,7 +106,6 @@ app.get('/blogsFmma', async (req, res) => {
   res.send(images);
 });
 
-
 // Define route for updating a blog
 app.put('/updateBlogFmma/:id', upload.single('image'), async (req, res) => {
   const { id } = req.params;
@@ -118,21 +117,27 @@ app.put('/updateBlogFmma/:id', upload.single('image'), async (req, res) => {
       return res.status(404).json({ message: 'Blog not found' });
     }
 
-    // Upload image to ImgBB
-    const formData = new FormData();
-    const { default: fetch } = await import('node-fetch');
-    formData.append('image', req.file.buffer.toString('base64'));
-
-    const response = await fetch('https://api.imgbb.com/1/upload?key=368cbdb895c5bed277d50d216adbfa52', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const data = await response.json();
-    const imageUrl = data.data.url;
-
     // Update the blog fields
     const { title, text, blogDate } = req.body;
+
+    // Check if keepImage flag is set
+    let imageUrl;
+    if (req.body.keepImage === 'true') {
+      imageUrl = existingBlog.url; // Keep the previous image URL
+    } else {
+      // Upload image to ImgBB
+      const formData = new FormData();
+      const { default: fetch } = await import('node-fetch');
+      formData.append('image', req.file.buffer.toString('base64'));
+
+      const response = await fetch('https://api.imgbb.com/1/upload?key=368cbdb895c5bed277d50d216adbfa52', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      imageUrl = data.data.url;
+    }
 
     existingBlog.url = imageUrl;
     existingBlog.title = title || existingBlog.title;
