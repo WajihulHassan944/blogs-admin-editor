@@ -15,6 +15,14 @@ const multer = require('multer');
 // Configure multer for file upload
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+const cloudinary = require('cloudinary').v2;
+
+// Configure Cloudinary with environment variables
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -225,6 +233,183 @@ console.log(name);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Campaign Schema
+const campaignSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  imageUrl: { type: String, required: true },
+  imageDeleteId: { type: String, required: true }, // For deleting image from Cloudinary
+});
+
+const Campaign = mongoose.model('Campaign', campaignSchema);
+
+// Create a new campaign
+app.post('/campaigns', upload.single('image'), async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+
+    // Upload image to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: 'campaigns' },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      ).end(req.file.buffer);
+    });
+
+    // Create a new campaign
+    const campaign = new Campaign({
+      title,
+      description,
+      imageUrl: result.secure_url,
+      imageDeleteId: result.public_id,
+    });
+
+    await campaign.save();
+
+    res.status(201).json({ message: 'Campaign created successfully', campaign });
+  } catch (error) {
+    console.error('Error creating campaign:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all campaigns
+app.get('/campaigns', async (req, res) => {
+  try {
+    const campaigns = await Campaign.find();
+    res.status(200).json(campaigns);
+  } catch (error) {
+    console.error('Error fetching campaigns:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get a campaign by ID
+app.get('/campaigns/:id', async (req, res) => {
+  try {
+    const campaign = await Campaign.findById(req.params.id);
+
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campaign not found' });
+    }
+
+    res.status(200).json(campaign);
+  } catch (error) {
+    console.error('Error fetching campaign:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update a campaign by ID
+app.put('/campaigns/:id', upload.single('image'), async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    const campaign = await Campaign.findById(req.params.id);
+
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campaign not found' });
+    }
+
+    // If a new image is uploaded, replace the old one
+    if (req.file) {
+      // Delete the old image from Cloudinary
+      if (campaign.imageDeleteId) {
+        await cloudinary.uploader.destroy(campaign.imageDeleteId);
+      }
+
+      // Upload the new image to Cloudinary
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: 'campaigns' },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        ).end(req.file.buffer);
+      });
+
+      // Update image details
+      campaign.imageUrl = result.secure_url;
+      campaign.imageDeleteId = result.public_id;
+    }
+
+    // Update other fields
+    campaign.title = title || campaign.title;
+    campaign.description = description || campaign.description;
+
+    await campaign.save();
+
+    res.status(200).json({ message: 'Campaign updated successfully', campaign });
+  } catch (error) {
+    console.error('Error updating campaign:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete a campaign by ID
+app.delete('/campaigns/:id', async (req, res) => {
+  try {
+    const campaign = await Campaign.findById(req.params.id);
+
+    if (!campaign) {
+      return res.status(404).json({ message: 'Campaign not found' });
+    }
+
+    // Delete the image from Cloudinary
+    if (campaign.imageDeleteId) {
+      await cloudinary.uploader.destroy(campaign.imageDeleteId);
+    }
+
+    // Delete the campaign from the database
+    await campaign.deleteOne();
+
+    res.status(200).json({ message: 'Campaign deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting campaign:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
+
+
+
+
+
+
 
 
 
