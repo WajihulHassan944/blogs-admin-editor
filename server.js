@@ -410,6 +410,7 @@ app.delete('/campaigns/:id', async (req, res) => {
 const productSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
+  category: { type: String, required: true },
   imageUrl: { type: String, required: true },
   imageDeleteId: { type: String, required: true }, // For deleting image from Cloudinary
 });
@@ -419,7 +420,7 @@ const Product = mongoose.model('Product', productSchema);
 // Create a new product
 app.post('/products', upload.single('image'), async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, category } = req.body;
 
     if (!req.file) {
       return res.status(400).json({ message: 'No image file provided' });
@@ -440,6 +441,7 @@ app.post('/products', upload.single('image'), async (req, res) => {
     const product = new Product({
       title,
       description,
+      category,
       imageUrl: result.secure_url,
       imageDeleteId: result.public_id,
     });
@@ -483,7 +485,7 @@ app.get('/products/:id', async (req, res) => {
 // Update a product by ID
 app.put('/products/:id', upload.single('image'), async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description,category } = req.body;
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -512,6 +514,7 @@ app.put('/products/:id', upload.single('image'), async (req, res) => {
 
     product.title = title || product.title;
     product.description = description || product.description;
+    product.category = category || product.category;
 
     await product.save();
 
