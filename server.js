@@ -406,6 +406,143 @@ app.delete('/campaigns/:id', async (req, res) => {
 
 
 
+// Product Schema
+const productSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  imageUrl: { type: String, required: true },
+  imageDeleteId: { type: String, required: true }, // For deleting image from Cloudinary
+});
+
+const Product = mongoose.model('Product', productSchema);
+
+// Create a new product
+app.post('/products', upload.single('image'), async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+
+    // Upload image to Cloudinary
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: 'products' },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      ).end(req.file.buffer);
+    });
+
+    // Create a new product
+    const product = new Product({
+      title,
+      description,
+      imageUrl: result.secure_url,
+      imageDeleteId: result.public_id,
+    });
+
+    await product.save();
+
+    res.status(201).json({ message: 'Product created successfully', product });
+  } catch (error) {
+    console.error('Error creating product:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all products
+app.get('/products', async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.status(200).json(products);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get a product by ID
+app.get('/products/:id', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update a product by ID
+app.put('/products/:id', upload.single('image'), async (req, res) => {
+  try {
+    const { title, description } = req.body;
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // If a new image is uploaded, replace the old one
+    if (req.file) {
+      if (product.imageDeleteId) {
+        await cloudinary.uploader.destroy(product.imageDeleteId);
+      }
+
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: 'products' },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        ).end(req.file.buffer);
+      });
+
+      product.imageUrl = result.secure_url;
+      product.imageDeleteId = result.public_id;
+    }
+
+    product.title = title || product.title;
+    product.description = description || product.description;
+
+    await product.save();
+
+    res.status(200).json({ message: 'Product updated successfully', product });
+  } catch (error) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete a product by ID
+app.delete('/products/:id', async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (product.imageDeleteId) {
+      await cloudinary.uploader.destroy(product.imageDeleteId);
+    }
+
+    await product.deleteOne();
+
+    res.status(200).json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 
 
