@@ -406,13 +406,12 @@ app.delete('/campaigns/:id', async (req, res) => {
 
 
 
-// Product Schema
 const productSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
   category: { type: String, required: true },
   imageUrl: { type: String, required: true },
-  imageDeleteId: { type: String, required: true }, // For deleting image from Cloudinary
+  imageDeleteId: { type: String, required: true },
 });
 
 const Product = mongoose.model('Product', productSchema);
@@ -551,8 +550,79 @@ app.delete('/products/:id', async (req, res) => {
 
 
 
+app.post("/send-data-myportfolio", (req, res) => {
+  const { name, email, message, subject } = req.body;
+  const nodemailer = require("nodemailer");
 
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user: 'vascularbundle43@gmail.com',
+      pass: 'isolyuxlbwlpdjty',
+    },
+  });
 
+  const storeMailOptions = {
+    from: email,
+    to: "wajih786hassan@gmail.com",
+    subject: `New Inquiry from ${name}: ${subject}`,
+    html: `
+      <center><img src="https://res.cloudinary.com/dqi6vk2vn/image/upload/v1745079298/nvkkhf5ph6pkegrbn4pb.png" alt="All County Construction Logo" style="margin-bottom: 20px; width: 70px; border-radius: 50%; padding: 5px; border: 2px solid #149ddd;"></center>
+
+      <center><h2 style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; margin-bottom: 20px;">New Contact Form Submission</h2></center>
+
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px;">You’ve received a new inquiry from the website contact form:</p>
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px;"><strong>Name:</strong> ${name}</p>
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px;"><strong>Email:</strong> ${email}</p>
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px;"><strong>Subject:</strong> ${subject}</p>
+      <hr style="border: 0.5px solid #ccc;">
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px;"><strong>Message:</strong></p>
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">${message}</p>
+    `,
+  };
+
+  const userMailOptions = {
+    from: "wajih786hassan@gmail.com",
+    to: email,
+    subject: "Thank You for Contacting All County Construction",
+    html: `
+      <center><img src="https://res.cloudinary.com/dqi6vk2vn/image/upload/v1745079298/nvkkhf5ph6pkegrbn4pb.png" alt="All County Construction Logo" style="margin-bottom: 20px; width: 70px; border-radius: 50%; padding: 5px; border: 2px solid #149ddd;"></center>
+
+      <center><h2 style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold;">Hi ${name},</h2></center>
+
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">Thank you for reaching out to <strong>All County Construction Services Inc.</strong> We’ve received your message and our team will review it shortly.</p>
+      
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; margin-top: 10px;"><strong>Your message:</strong></p>
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">"${message}"</p>
+
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">We appreciate your interest and will get back to you as soon as possible. If you need immediate assistance, feel free to call us directly.</p>
+
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">Best regards,<br><strong>All County Construction Services Inc.</strong><br>Winter Haven, FL<br><a href="mailto:vascularbundle43@gmail.com" style="color: #149ddd;">vascularbundle43@gmail.com</a></p>
+    `
+  };
+
+  transporter.sendMail(storeMailOptions, function(error, storeInfo) {
+    if (error) {
+      console.error(error);
+      res.status(500).send("Error sending email to store");
+    } else {
+      console.log("Email sent to store: " + storeInfo.response);
+
+      transporter.sendMail(userMailOptions, function(error, userInfo) {
+        if (error) {
+          console.error(error);
+          res.status(500).send("Error sending email to user");
+        } else {
+          console.log("Email sent to user: " + userInfo.response);
+          res.status(200).send("Form submitted successfully");
+        }
+      });
+    }
+  });
+});
 
 
 
