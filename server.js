@@ -567,7 +567,7 @@ app.post("/send-data-myportfolio", (req, res) => {
 
   const storeMailOptions = {
     from: email,
-    to: "wajih786hassan@gmail.com",
+    to: "marcus@allcountyfl.com",
     subject: `New Inquiry from ${name}: ${subject}`,
     html: `
       <center><img src="https://res.cloudinary.com/dqi6vk2vn/image/upload/v1745079298/nvkkhf5ph6pkegrbn4pb.png" alt="All County Construction Logo" style="margin-bottom: 20px; width: 70px; border-radius: 50%; padding: 5px; border: 2px solid #149ddd;"></center>
@@ -585,7 +585,7 @@ app.post("/send-data-myportfolio", (req, res) => {
   };
 
   const userMailOptions = {
-    from: "wajih786hassan@gmail.com",
+    from: "marcus@allcountyfl.com",
     to: email,
     subject: "Thank You for Contacting All County Construction",
     html: `
@@ -598,9 +598,9 @@ app.post("/send-data-myportfolio", (req, res) => {
       <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; margin-top: 10px;"><strong>Your message:</strong></p>
       <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">"${message}"</p>
 
-      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">We appreciate your interest and will get back to you as soon as possible. If you need immediate assistance, feel free to call us directly.</p>
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">We appreciate your interest and will get back to you as soon as possible. If you need immediate assistance, feel free to call us directly at +(407) 686 3865.</p>
 
-      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">Best regards,<br><strong>All County Construction Services Inc.</strong><br>Winter Haven, FL<br><a href="mailto:vascularbundle43@gmail.com" style="color: #149ddd;">vascularbundle43@gmail.com</a></p>
+      <p style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 16px; line-height: 1.5;">Best regards,<br><strong>All County Construction Services Inc.</strong><br>Winter Haven, FL<br><a href="mailto:marcus@allcountyfl.com" style="color: #149ddd;">marcus@allcountyfl.com</a></p>
     `
   };
 
