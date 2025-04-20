@@ -634,6 +634,157 @@ app.post("/send-data-myportfolio", (req, res) => {
 
 
 
+
+
+
+
+
+
+
+const constructionBlogSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  category: { type: String, required: true },
+  imageUrl: { type: String, required: true },
+  imageDeleteId: { type: String, required: true },
+});
+
+const ConstructionBlog = mongoose.model('ConstructionBlog', constructionBlogSchema);
+
+// Create a new construction blog
+app.post('/api/construction/blogs', upload.single('image'), async (req, res) => {
+  try {
+    const { title, description, category } = req.body;
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+
+    const result = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { folder: 'constructionBlogs' },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        }
+      ).end(req.file.buffer);
+    });
+
+    const constructionBlog = new ConstructionBlog({
+      title,
+      description,
+      category,
+      imageUrl: result.secure_url,
+      imageDeleteId: result.public_id,
+    });
+
+    await constructionBlog.save();
+
+    res.status(201).json({ message: 'Construction blog created successfully', constructionBlog });
+  } catch (error) {
+    console.error('Error creating construction blog:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all construction blogs
+app.get('/api/construction/blogs', async (req, res) => {
+  try {
+    const blogs = await ConstructionBlog.find();
+    res.status(200).json(blogs);
+  } catch (error) {
+    console.error('Error fetching construction blogs:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get a construction blog by ID
+app.get('/api/construction/blogs/:id', async (req, res) => {
+  try {
+    const blog = await ConstructionBlog.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: 'Construction blog not found' });
+    }
+
+    res.status(200).json(blog);
+  } catch (error) {
+    console.error('Error fetching construction blog:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update a construction blog by ID
+app.put('/api/construction/blogs/:id', upload.single('image'), async (req, res) => {
+  try {
+    const { title, description, category } = req.body;
+    const blog = await ConstructionBlog.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: 'Construction blog not found' });
+    }
+
+    if (req.file) {
+      if (blog.imageDeleteId) {
+        await cloudinary.uploader.destroy(blog.imageDeleteId);
+      }
+
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: 'constructionBlogs' },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        ).end(req.file.buffer);
+      });
+
+      blog.imageUrl = result.secure_url;
+      blog.imageDeleteId = result.public_id;
+    }
+
+    blog.title = title || blog.title;
+    blog.description = description || blog.description;
+    blog.category = category || blog.category;
+
+    await blog.save();
+
+    res.status(200).json({ message: 'Construction blog updated successfully', blog });
+  } catch (error) {
+    console.error('Error updating construction blog:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete a construction blog by ID
+app.delete('/api/construction/blogs/:id', async (req, res) => {
+  try {
+    const blog = await ConstructionBlog.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: 'Construction blog not found' });
+    }
+
+    if (blog.imageDeleteId) {
+      await cloudinary.uploader.destroy(blog.imageDeleteId);
+    }
+
+    await blog.deleteOne();
+
+    res.status(200).json({ message: 'Construction blog deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting construction blog:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+
+
+
+
+
+
 app.get("/", (req,res) =>{
   res.send("Backend server for Blogs has started running successfully...");
 });
