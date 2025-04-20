@@ -570,7 +570,7 @@ app.post("/send-data-myportfolio", (req, res) => {
     to: "marcus@allcountyfl.com",
     subject: `New Inquiry from ${name}: ${subject}`,
     html: `
-      <center><img src="https://res.cloudinary.com/dqi6vk2vn/image/upload/v1745166923/g0pa3czkoka36sznjjz1.png" alt="All County Construction Logo" style="margin-bottom: 20px; width: 70px; border-radius: 50%; padding: 5px; border: 2px solid #149ddd;"></center>
+      <center><img src="https://res.cloudinary.com/dqi6vk2vn/image/upload/v1745166923/g0pa3czkoka36sznjjz1.png" alt="All County Construction Logo" style="margin-bottom: 20px; width: 100px; "></center>
 
       <center><h2 style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; margin-bottom: 20px;">New Contact Form Submission</h2></center>
 
@@ -589,7 +589,7 @@ app.post("/send-data-myportfolio", (req, res) => {
     to: email,
     subject: "Thank You for Contacting All County Construction",
     html: `
-      <center><img src="https://res.cloudinary.com/dqi6vk2vn/image/upload/v1745166923/g0pa3czkoka36sznjjz1.png" alt="All County Construction Logo" style="margin-bottom: 20px; width: 70px; border-radius: 50%; padding: 5px; border: 2px solid #149ddd;"></center>
+      <center><img src="https://res.cloudinary.com/dqi6vk2vn/image/upload/v1745166923/g0pa3czkoka36sznjjz1.png" alt="All County Construction Logo" style="margin-bottom: 20px; width: 100px; "></center>
 
       <center><h2 style="color: #3A3A3A; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold;">Hi ${name},</h2></center>
 
