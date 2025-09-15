@@ -802,6 +802,7 @@ const BlogDaniel = mongoose.model("BlogDaniel", blogsSchemaDaniel);
 // ================== APIs ==================
 
 // 1. Create BlogDaniel
+// 1. Create BlogDaniel
 app.post("/daniel/blogs", upload.single("image"), async (req, res) => {
   try {
     const { title, description, category } = req.body;
@@ -813,7 +814,7 @@ app.post("/daniel/blogs", upload.single("image"), async (req, res) => {
           if (err) reject(err);
           else resolve(result);
         });
-        req.file.stream.pipe(stream);
+        stream.end(req.file.buffer); // ✅ fix here
       });
       imageUrl = uploadResult.secure_url;
     } else {
