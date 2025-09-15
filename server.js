@@ -785,6 +785,122 @@ app.delete('/api/construction/blogs/:id', async (req, res) => {
 
 
 
+
+
+
+// ================== Schema ==================
+const blogsSchemaDaniel = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  image: { type: String, required: true },
+  category: { type: String },
+  date: { type: Date, default: Date.now },
+});
+
+const BlogDaniel = mongoose.model("BlogDaniel", blogsSchemaDaniel);
+
+// ================== APIs ==================
+
+// 1. Create BlogDaniel
+app.post("/daniel/blogs", upload.single("image"), async (req, res) => {
+  try {
+    const { title, description, category } = req.body;
+    let imageUrl = "";
+
+    if (req.file) {
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream({ folder: "blogs" }, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+        req.file.stream.pipe(stream);
+      });
+      imageUrl = uploadResult.secure_url;
+    } else {
+      return res.status(400).json({ error: "Image is required" });
+    }
+
+    const blogDaniel = new BlogDaniel({ title, description, image: imageUrl, category });
+    await blogDaniel.save();
+    res.json(blogDaniel);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Get All BlogDaniel
+app.get("/daniel/blogs", async (req, res) => {
+  try {
+    const blogs = await BlogDaniel.find().sort({ date: -1 });
+    res.json(blogs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Get BlogDaniel by ID
+app.get("/daniel/blogs/:id", async (req, res) => {
+  try {
+    const blogDaniel = await BlogDaniel.findById(req.params.id);
+    if (!blogDaniel) return res.status(404).json({ error: "BlogDaniel not found" });
+    res.json(blogDaniel);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Update BlogDaniel
+app.put("/daniel/blogs/:id", upload.single("image"), async (req, res) => {
+  try {
+    const { title, description, category } = req.body;
+    let updateData = { title, description, category };
+
+    if (req.file) {
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream({ folder: "blogs" }, (err, result) => {
+          if (err) reject(err);
+          else resolve(result);
+        });
+        req.file.stream.pipe(stream);
+      });
+      updateData.image = uploadResult.secure_url;
+    }
+
+    const blogDaniel = await BlogDaniel.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!blogDaniel) return res.status(404).json({ error: "BlogDaniel not found" });
+    res.json(blogDaniel);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Delete BlogDaniel
+app.delete("/daniel/blogs/:id", async (req, res) => {
+  try {
+    const blogDaniel = await BlogDaniel.findByIdAndDelete(req.params.id);
+    if (!blogDaniel) return res.status(404).json({ error: "BlogDaniel not found" });
+    res.json({ message: "BlogDaniel deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 app.get("/", (req,res) =>{
   res.send("Backend server for Blogs has started running successfully...");
 });
