@@ -800,8 +800,6 @@ const blogsSchemaDaniel = new mongoose.Schema({
 const BlogDaniel = mongoose.model("BlogDaniel", blogsSchemaDaniel);
 
 // ================== APIs ==================
-
-// 1. Create BlogDaniel
 // 1. Create BlogDaniel
 app.post("/daniel/blogs", upload.single("image"), async (req, res) => {
   try {
@@ -890,6 +888,154 @@ app.delete("/daniel/blogs/:id", async (req, res) => {
 
 
 
+
+
+
+// ================== Schema ==================
+const bannerSchemaDaniel = new mongoose.Schema({
+  logo: {
+    url: { type: String, required: true },
+    publicId: { type: String, required: true },
+  },
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  subDescription: { type: String },
+  profileImage: {
+    url: { type: String, required: true },
+    publicId: { type: String, required: true },
+  },
+  resumePdf: {
+    url: { type: String, required: true },
+    publicId: { type: String, required: true },
+  },
+  linkedUrl: { type: String },
+  date: { type: Date, default: Date.now },
+});
+
+const BannerDaniel = mongoose.model("BannerDaniel", bannerSchemaDaniel);
+
+// ================== APIs ==================
+
+// Helper: upload to Cloudinary
+const uploadToCloudinary = (file, folder, resourceType = "auto") => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: resourceType },
+      (err, result) => {
+        if (err) reject(err);
+        else resolve({ url: result.secure_url, publicId: result.public_id });
+      }
+    );
+    stream.end(file.buffer);
+  });
+};
+
+// Helper: delete from Cloudinary
+const deleteFromCloudinary = async (publicId, resourceType = "image") => {
+  try {
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+  } catch (err) {
+    console.error("Cloudinary delete error:", err);
+  }
+};
+
+// 1. Upsert Banner (always overwrite)
+app.post(
+  "/daniel/banner",
+  upload.fields([
+    { name: "logo", maxCount: 1 },
+    { name: "profileImage", maxCount: 1 },
+    { name: "resumePdf", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { name, description, subDescription, linkedUrl } = req.body;
+
+      // check existing banner
+      const existingBanner = await BannerDaniel.findOne();
+
+      let logo, profileImage, resumePdf;
+
+      if (req.files["logo"]) {
+        logo = await uploadToCloudinary(req.files["logo"][0], "banner/logo");
+        if (existingBanner?.logo?.publicId) {
+          await deleteFromCloudinary(existingBanner.logo.publicId, "image");
+        }
+      } else if (existingBanner?.logo) {
+        logo = existingBanner.logo;
+      }
+
+      if (req.files["profileImage"]) {
+        profileImage = await uploadToCloudinary(req.files["profileImage"][0], "banner/profile");
+        if (existingBanner?.profileImage?.publicId) {
+          await deleteFromCloudinary(existingBanner.profileImage.publicId, "image");
+        }
+      } else if (existingBanner?.profileImage) {
+        profileImage = existingBanner.profileImage;
+      }
+
+      if (req.files["resumePdf"]) {
+        resumePdf = await uploadToCloudinary(req.files["resumePdf"][0], "banner/resume", "raw");
+        if (existingBanner?.resumePdf?.publicId) {
+          await deleteFromCloudinary(existingBanner.resumePdf.publicId, "raw");
+        }
+      } else if (existingBanner?.resumePdf) {
+        resumePdf = existingBanner.resumePdf;
+      }
+
+      const bannerData = {
+        logo,
+        name,
+        description,
+        subDescription,
+        profileImage,
+        resumePdf,
+        linkedUrl,
+        date: new Date(),
+      };
+
+      let banner;
+      if (existingBanner) {
+        banner = await BannerDaniel.findByIdAndUpdate(existingBanner._id, bannerData, { new: true });
+      } else {
+        banner = new BannerDaniel(bannerData);
+        await banner.save();
+      }
+
+      res.json(banner);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// 2. Get Banner
+app.get("/daniel/banner", async (req, res) => {
+  try {
+    const banner = await BannerDaniel.findOne();
+    res.json(banner);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Delete Banner (and all Cloudinary files)
+app.delete("/daniel/banner", async (req, res) => {
+  try {
+    const banner = await BannerDaniel.findOne();
+    if (!banner) return res.status(404).json({ error: "No banner found" });
+
+    // delete all files from Cloudinary
+    if (banner.logo?.publicId) await deleteFromCloudinary(banner.logo.publicId, "image");
+    if (banner.profileImage?.publicId) await deleteFromCloudinary(banner.profileImage.publicId, "image");
+    if (banner.resumePdf?.publicId) await deleteFromCloudinary(banner.resumePdf.publicId, "raw");
+
+    await BannerDaniel.findByIdAndDelete(banner._id);
+    res.json({ message: "Banner deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 
