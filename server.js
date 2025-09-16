@@ -916,34 +916,44 @@ const bannerSchemaDaniel = new mongoose.Schema({
 const BannerDaniel = mongoose.model("BannerDaniel", bannerSchemaDaniel);
 
 // ================== APIs ==================
+// Helper: delete from Cloudinary
+const deleteFromCloudinary = async (publicId, resourceType = "image") => {
+  try {
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+  } catch (err) {
+    console.error("Cloudinary delete error:", err);
+  }
+};
 
-// Helper: upload to Cloudinary (handles PDFs properly)
+
+
 const uploadToCloudinary = (file, folder, resourceType = "auto") => {
   return new Promise((resolve, reject) => {
     const uniqueId = uuidv4();
-    const isPdf = resourceType === "raw";
-    const public_id = `${folder}/${uniqueId}${isPdf ? ".pdf" : ""}`;
+    const isPdf = file.mimetype === "application/pdf"; // ✅ check by mimetype
+    const public_id = `${folder}/${uniqueId}${isPdf ? "" : ""}`; // no .pdf here, let Cloudinary handle
 
     const stream = cloudinary.uploader.upload_stream(
       {
         folder,
-        resource_type: resourceType,
+        resource_type: isPdf ? "raw" : resourceType, // ✅ force raw for pdfs
         type: "upload",
         public_id,
         use_filename: true,
         unique_filename: false,
         overwrite: true,
-        format: isPdf ? "pdf" : undefined,
+        format: isPdf ? "pdf" : undefined, // ✅ force format
       },
       (err, result) => {
         if (err) {
           console.error(`❌ Cloudinary upload error (${resourceType}):`, err);
           reject(err);
         } else {
-          console.log(`✅ Uploaded to Cloudinary (${resourceType}):`, result.secure_url);
+          console.log(`✅ Uploaded to Cloudinary (${isPdf ? "PDF" : resourceType}):`, result.secure_url);
           resolve({
             url: result.secure_url,
             publicId: result.public_id,
+            format: result.format, // ✅ now should be "pdf"
           });
         }
       }
@@ -953,14 +963,7 @@ const uploadToCloudinary = (file, folder, resourceType = "auto") => {
   });
 };
 
-// Helper: delete from Cloudinary
-const deleteFromCloudinary = async (publicId, resourceType = "image") => {
-  try {
-    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
-  } catch (err) {
-    console.error("Cloudinary delete error:", err);
-  }
-};
+
 
 // 1. Upsert Banner (always overwrite)
 app.post(
@@ -999,12 +1002,13 @@ app.post(
         profileImage = existingBanner.profileImage;
       }
 
-      if (req.files["resumePdf"]) {
-        resumePdf = await uploadToCloudinary(req.files["resumePdf"][0], "banner/resume", "raw");
-        if (existingBanner?.resumePdf?.publicId) {
-          await deleteFromCloudinary(existingBanner.resumePdf.publicId, "raw");
-        }
-      } else if (existingBanner?.resumePdf) {
+    if (req.files["resumePdf"]) {
+  resumePdf = await uploadToCloudinary(req.files["resumePdf"][0], "banner/resume");
+  if (existingBanner?.resumePdf?.publicId) {
+    await deleteFromCloudinary(existingBanner.resumePdf.publicId, "raw");
+  }
+}
+ else if (existingBanner?.resumePdf) {
         resumePdf = existingBanner.resumePdf;
       }
 
