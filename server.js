@@ -5,7 +5,8 @@ const app = express();
 const { ObjectId } = require('mongodb');
 const cors = require("cors");
 const FormData = require('form-data');
-
+const streamifier = require("streamifier");
+const { v4: uuidv4 } = require("uuid");
 app.use(express.json());
 app.use(cors());
 
@@ -916,17 +917,39 @@ const BannerDaniel = mongoose.model("BannerDaniel", bannerSchemaDaniel);
 
 // ================== APIs ==================
 
-// Helper: upload to Cloudinary
+// Helper: upload to Cloudinary (handles PDFs properly)
 const uploadToCloudinary = (file, folder, resourceType = "auto") => {
   return new Promise((resolve, reject) => {
+    const uniqueId = uuidv4();
+    const isPdf = resourceType === "raw";
+    const public_id = `${folder}/${uniqueId}${isPdf ? ".pdf" : ""}`;
+
     const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: resourceType },
+      {
+        folder,
+        resource_type: resourceType,
+        type: "upload",
+        public_id,
+        use_filename: true,
+        unique_filename: false,
+        overwrite: true,
+        format: isPdf ? "pdf" : undefined,
+      },
       (err, result) => {
-        if (err) reject(err);
-        else resolve({ url: result.secure_url, publicId: result.public_id });
+        if (err) {
+          console.error(`❌ Cloudinary upload error (${resourceType}):`, err);
+          reject(err);
+        } else {
+          console.log(`✅ Uploaded to Cloudinary (${resourceType}):`, result.secure_url);
+          resolve({
+            url: result.secure_url,
+            publicId: result.public_id,
+          });
+        }
       }
     );
-    stream.end(file.buffer);
+
+    streamifier.createReadStream(file.buffer).pipe(stream);
   });
 };
 
@@ -956,8 +979,9 @@ app.post(
 
       let logo, profileImage, resumePdf;
 
+      // ✅ Logo upload
       if (req.files["logo"]) {
-        logo = await uploadToCloudinary(req.files["logo"][0], "banner/logo");
+        logo = await uploadToCloudinary(req.files["logo"][0], "banner/logo", "image");
         if (existingBanner?.logo?.publicId) {
           await deleteFromCloudinary(existingBanner.logo.publicId, "image");
         }
@@ -965,8 +989,9 @@ app.post(
         logo = existingBanner.logo;
       }
 
+      // ✅ Profile Image upload
       if (req.files["profileImage"]) {
-        profileImage = await uploadToCloudinary(req.files["profileImage"][0], "banner/profile");
+        profileImage = await uploadToCloudinary(req.files["profileImage"][0], "banner/profile", "image");
         if (existingBanner?.profileImage?.publicId) {
           await deleteFromCloudinary(existingBanner.profileImage.publicId, "image");
         }
@@ -996,7 +1021,11 @@ app.post(
 
       let banner;
       if (existingBanner) {
-        banner = await BannerDaniel.findByIdAndUpdate(existingBanner._id, bannerData, { new: true });
+        banner = await BannerDaniel.findByIdAndUpdate(
+          existingBanner._id,
+          bannerData,
+          { new: true }
+        );
       } else {
         banner = new BannerDaniel(bannerData);
         await banner.save();
